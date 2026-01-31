@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resubmit"
+version = "0.0.1"
+description = "Small wrapper around submitit to simplify cluster submissions"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [ { name = "Your Name" } ]
+dependencies = ["submitit>=0.8"]
+
+[project.optional-dependencies]
+debug = ["debugpy"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["resubmit*"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
