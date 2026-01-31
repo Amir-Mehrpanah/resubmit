@@ -11,7 +11,7 @@ def test_create_jobs_basic():
 
 
 def test_create_jobs_callable():
-    params = {"a": [1, 2], "b": lambda df: df["a"] * 10}
+    params = {"a": [1, 2], "b__callable": lambda df: df["a"] * 10}
     df = create_jobs_dataframe(params)
     assert list(df["b"]) == [10, 20]
 
