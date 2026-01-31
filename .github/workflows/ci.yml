@@ -18,6 +18,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .[debug]
           pip install pytest build
+          pip install pandas
       - name: Run tests
         run: |
           pytest -q
