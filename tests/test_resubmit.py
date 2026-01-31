@@ -1,5 +1,6 @@
 import pytest
-from resubmit import submit_jobs, maybe_attach_debugger
+from resubmit import maybe_attach_debugger
+from resubmit.__submit import submit_jobs 
 
 
 def dummy_func(jobs):

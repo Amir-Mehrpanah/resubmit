@@ -1,4 +1,5 @@
 """Core submission utilities wrapping submitit."""
+
 from typing import Any, Callable, Iterable, List, Optional, Dict
 
 
@@ -7,17 +8,14 @@ def submit_jobs(
     func: Callable[[List[dict]], Any],
     *,
     timeout_min: int,
-    cpus_per_task: int = 16,
-    mem_gb: int = 64,
-    num_gpus: int = 1,
-    account: Optional[str] = None,
-    folder: str = "logs/%j",
-    block: bool = False,
-    prompt: bool = True,
-    local_run: bool = False,
+    cpus_per_task: int,
+    mem_gb: int,
+    num_gpus: int,
+    folder: str,
+    block: bool,
+    prompt: bool,
+    local_run: bool,
     slurm_additional_parameters: Optional[Dict] = None,
-    constraint: Optional[str] = None,
-    reservation: Optional[str] = None,
 ):
     """Submit jobs described by `jobs_args` where each entry is a dict of kwargs for `func`.
 
@@ -46,6 +44,7 @@ def submit_jobs(
             return
 
     import submitit
+
     print("submitting jobs")
     executor = submitit.AutoExecutor(folder=folder)
 
@@ -55,14 +54,6 @@ def submit_jobs(
     else:
         slurm_additional_parameters = dict(slurm_additional_parameters)
         slurm_additional_parameters.setdefault("gpus", num_gpus)
-
-    # Allow explicit overrides similar to `account`.
-    if account is not None:
-        slurm_additional_parameters["account"] = account
-    if reservation is not None:
-        slurm_additional_parameters["reservation"] = reservation
-    if constraint is not None:
-        slurm_additional_parameters["constraint"] = constraint
 
     print("Slurm additional parameters:", slurm_additional_parameters)
 
