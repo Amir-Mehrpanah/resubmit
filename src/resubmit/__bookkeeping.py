@@ -5,27 +5,6 @@ from itertools import product
 import logging
 
 
-def _is_regex_spec(val: Any) -> bool:
-    """Return True if val looks like a regex specifier.
-
-    Accepted forms:
-    - compiled `re.Pattern`
-    - tuple (`re.Pattern`, exclude: bool)
-    - dict with keys `pattern` (re.Pattern) and optional `exclude` (bool)
-    - string starting with 're:' (e.g. 're:^foo.*') meaning include matches
-    - string starting with '!re:' meaning exclude matches
-    """
-    if hasattr(val, "search") and callable(val.search):
-        return True
-    if isinstance(val, tuple) and len(val) >= 1 and hasattr(val[0], "search"):
-        return True
-    if isinstance(val, dict) and "pattern" in val:
-        return True
-    if isinstance(val, str) and (val.startswith("re:") or val.startswith("!re:")):
-        return True
-    return False
-
-
 def _normalize_regex_spec(val: Any) -> Tuple[re.Pattern, bool]:
     """Return (compiled_pattern, exclude_flag) for a given regex spec.
 
@@ -115,11 +94,6 @@ def create_jobs_dataframe(params: Dict[str, Any]) -> pd.DataFrame:
                 base = k[: -len("_unique")]
             unique_items[base] = v
             continue
-        elif callable(v):
-            callables[k] = v
-        elif _is_regex_spec(v):
-            # treat a regex spec provided under the same key as a filter for that column
-            regex_specs[k] = v
         else:
             static_items[k] = v
 
@@ -206,7 +180,7 @@ def submit_jobs(
 
     jobs_df = create_jobs_dataframe(jobs_args)
     records = jobs_df.to_dict(orient="records")
-    from .__submit import submit_jobs as _submit_jobs
+    from .__submit import _submit_jobs
 
     return _submit_jobs(
         records,
