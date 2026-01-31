@@ -17,20 +17,23 @@ Steps to publish the package to PyPI using GitHub Actions (publish on tag push):
      - git remote add origin git@github.com:your-org/resubmit.git
      - git push -u origin main
 
-4. Bump version in `pyproject.toml`
-   - Update `version = "x.y.z"` to the next release (semantic versioning is recommended)
-
-5. Tag the release and push the tag
-   - git tag vX.Y.Z
-   - git push origin vX.Y.Z
-
-6. GitHub Actions will trigger on the tag push
-   - The workflow `publish.yml` will build the distribution and publish to PyPI using the `PYPI_API_TOKEN` secret
-   - A GitHub Release will be created automatically (optional step in the workflow)
-
 7. Verify publication
    - Check https://pypi.org/project/resubmit/ for the new release
 
 Notes
 - Before publishing to the real PyPI you can test the flow using TestPyPI and a separate token (update the workflow to use TestPyPI endpoint). Ask me if you want that flow added.
 - Keep your `PYPI_API_TOKEN` secret. Use GitHub repo secrets and do not commit the token anywhere.
+
+
+for each change:
+
+1. Bump version in `pyproject.toml`
+   - Update `version = "x.y.z"` to the next release (semantic versioning is recommended)
+
+2. Tag the release and push the tag
+   - git tag vX.Y.Z
+   - git push origin vX.Y.Z
+
+3. GitHub Actions will trigger on the tag push
+   - The workflow `publish.yml` will build the distribution and publish to PyPI using the `PYPI_API_TOKEN` secret
+   - A GitHub Release will be created automatically (optional step in the workflow)

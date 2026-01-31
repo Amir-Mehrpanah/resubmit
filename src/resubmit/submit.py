@@ -16,11 +16,18 @@ def submit_jobs(
     prompt: bool = True,
     local_run: bool = False,
     slurm_additional_parameters: Optional[Dict] = None,
+    constraint: Optional[str] = None,
+    reservation: Optional[str] = None,
 ):
     """Submit jobs described by `jobs_args` where each entry is a dict of kwargs for `func`.
 
     - If `local_run` is True, the function is called directly: `func(jobs_args)`.
     - Otherwise, submits via submitit.AutoExecutor and returns job objects or, if `block` is True, waits and returns results.
+
+    Optional Slurm settings `constraint` and `reservation` can be provided via explicit
+    parameters (they take precedence) or by passing `slurm_additional_parameters`.
+    If not provided, they are omitted so the code is not tied to cluster-specific
+    defaults.
     """
     jobs_list = list(jobs_args) if not isinstance(jobs_args, list) else jobs_args
 
@@ -42,19 +49,20 @@ def submit_jobs(
     print("submitting jobs")
     executor = submitit.AutoExecutor(folder=folder)
 
-    # default slurm params
+    # default slurm params (keep cluster-specific options out unless explicitly set)
     if slurm_additional_parameters is None:
-        slurm_additional_parameters = {
-            "constraint": "thin",
-            "reservation": "safe",
-            "gpus": num_gpus,
-        }
+        slurm_additional_parameters = {"gpus": num_gpus}
     else:
         slurm_additional_parameters = dict(slurm_additional_parameters)
         slurm_additional_parameters.setdefault("gpus", num_gpus)
 
+    # Allow explicit overrides similar to `account`.
     if account is not None:
         slurm_additional_parameters["account"] = account
+    if reservation is not None:
+        slurm_additional_parameters["reservation"] = reservation
+    if constraint is not None:
+        slurm_additional_parameters["constraint"] = constraint
 
     print("Slurm additional parameters:", slurm_additional_parameters)
 
