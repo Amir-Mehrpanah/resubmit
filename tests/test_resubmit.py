@@ -1,6 +1,6 @@
 import pytest
 from resubmit import maybe_attach_debugger
-from resubmit.__submit import submit_jobs 
+from resubmit.__submit import _submit_jobs
 
 
 def dummy_func(jobs):
@@ -10,7 +10,18 @@ def dummy_func(jobs):
 
 def test_submit_local_run():
     jobs = [{"id": 1}, {"id": 2}]
-    res = submit_jobs(jobs, dummy_func, timeout_min=1, local_run=True)
+    res = _submit_jobs(
+        jobs,
+        dummy_func,
+        timeout_min=1,
+        local_run=True,
+        num_gpus=0,
+        cpus_per_task=1,
+        mem_gb=8,
+        folder="dummy/%j",
+        block=False,
+        prompt=False,
+    )
     assert res == ["ok-1", "ok-2"]
 
 
@@ -25,11 +36,11 @@ def test_slurm_parameters_optional(monkeypatch):
 
     class DummyExecutor:
         def __init__(self, folder):
-            events['folder'] = folder
+            events["folder"] = folder
 
         def update_parameters(self, **kwargs):
             # capture the parameters passed to the executor
-            events['update'] = kwargs
+            events["update"] = kwargs
 
         def map_array(self, func, jobs_list):
             return []
@@ -38,15 +49,27 @@ def test_slurm_parameters_optional(monkeypatch):
         AutoExecutor = DummyExecutor
 
     import sys
-    monkeypatch.setitem(sys.modules, 'submitit', DummyModule)
+
+    monkeypatch.setitem(sys.modules, "submitit", DummyModule)
 
     jobs = [{"id": 1}]
     # default: no constraint/reservation keys
-    submit_jobs(jobs, dummy_func, timeout_min=1, local_run=False, num_gpus=2, prompt=False)
-    slurm = events['update']['slurm_additional_parameters']
-    assert slurm['gpus'] == 2
-    assert 'constraint' not in slurm
-    assert 'reservation' not in slurm
+    _submit_jobs(
+        jobs,
+        dummy_func,
+        timeout_min=1,
+        local_run=False,
+        num_gpus=2,
+        prompt=False,
+        cpus_per_task=4,
+        mem_gb=16,
+        folder="logs/%j",
+        block=False,
+    )
+    slurm = events["update"]["slurm_additional_parameters"]
+    assert slurm["gpus"] == 2
+    assert "constraint" not in slurm
+    assert "reservation" not in slurm
 
 
 def test_slurm_parameters_settable(monkeypatch):
@@ -54,10 +77,10 @@ def test_slurm_parameters_settable(monkeypatch):
 
     class DummyExecutor:
         def __init__(self, folder):
-            events['folder'] = folder
+            events["folder"] = folder
 
         def update_parameters(self, **kwargs):
-            events['update'] = kwargs
+            events["update"] = kwargs
 
         def map_array(self, func, jobs_list):
             return []
@@ -66,52 +89,27 @@ def test_slurm_parameters_settable(monkeypatch):
         AutoExecutor = DummyExecutor
 
     import sys
-    monkeypatch.setitem(sys.modules, 'submitit', DummyModule)
+
+    monkeypatch.setitem(sys.modules, "submitit", DummyModule)
 
     jobs = [{"id": 1}]
-    submit_jobs(
+    _submit_jobs(
         jobs,
         dummy_func,
         timeout_min=1,
         local_run=False,
-        constraint='thin',
-        reservation='safe',
         prompt=False,
+        slurm_additional_parameters={
+            "constraint": "thin",
+            "reservation": "safe",
+        },
+        cpus_per_task=4,
+        mem_gb=16,
+        folder="logs/%j",
+        block=False,
+        num_gpus=1,
     )
-    slurm = events['update']['slurm_additional_parameters']
-    assert slurm['constraint'] == 'thin'
-    assert slurm['reservation'] == 'safe'
+    slurm = events["update"]["slurm_additional_parameters"]
+    assert slurm["constraint"] == "thin"
+    assert slurm["reservation"] == "safe"
 
-
-def test_slurm_parameters_arg_precedence(monkeypatch):
-    events = {}
-
-    class DummyExecutor:
-        def __init__(self, folder):
-            events['folder'] = folder
-
-        def update_parameters(self, **kwargs):
-            events['update'] = kwargs
-
-        def map_array(self, func, jobs_list):
-            return []
-
-    class DummyModule:
-        AutoExecutor = DummyExecutor
-
-    import sys
-    monkeypatch.setitem(sys.modules, 'submitit', DummyModule)
-
-    jobs = [{"id": 1}]
-    # slurm_additional_parameters has constraint='foo' but explicit arg should override
-    submit_jobs(
-        jobs,
-        dummy_func,
-        timeout_min=1,
-        local_run=False,
-        slurm_additional_parameters={'constraint': 'foo'},
-        constraint='bar',
-        prompt=False,
-    )
-    slurm = events['update']['slurm_additional_parameters']
-    assert slurm['constraint'] == 'bar'

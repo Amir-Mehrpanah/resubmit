@@ -3,7 +3,7 @@
 from typing import Any, Callable, Iterable, List, Optional, Dict
 
 
-def submit_jobs(
+def _submit_jobs(
     jobs_args: Iterable[dict],
     func: Callable[[List[dict]], Any],
     *,

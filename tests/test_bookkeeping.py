@@ -1,6 +1,6 @@
 import re
 import pandas as pd
-from src.resubmit.__bookkeeping import create_jobs_dataframe, ensure_unique_combinations
+from resubmit.__bookkeeping import create_jobs_dataframe, ensure_unique_combinations
 
 
 def test_create_jobs_basic():
