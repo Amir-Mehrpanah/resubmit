@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resubmit"
-version = "0.0.1"
+version = "0.0.2"
 description = "Small wrapper around submitit to simplify cluster submissions"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [ { name = "Your Name" } ]
+authors = [ { name = "Amir Mehrpanah" } ]
 dependencies = ["submitit>=0.8"]
 
 [project.optional-dependencies]
