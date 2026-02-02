@@ -15,6 +15,7 @@ def _submit_jobs(
     block: bool,
     prompt: bool,
     local_run: bool,
+    job_name: Optional[str] = "resubmit",
     slurm_additional_parameters: Optional[Dict] = None,
 ):
     """Submit jobs described by `jobs_args` where each entry is a dict of kwargs for `func`.
@@ -48,18 +49,13 @@ def _submit_jobs(
     print("submitting jobs")
     executor = submitit.AutoExecutor(folder=folder)
 
-    # default slurm params (keep cluster-specific options out unless explicitly set)
-    if slurm_additional_parameters is None:
-        slurm_additional_parameters = {"gpus": num_gpus}
-    else:
-        slurm_additional_parameters = dict(slurm_additional_parameters)
-        slurm_additional_parameters.setdefault("gpus", num_gpus)
-
     print("Slurm additional parameters:", slurm_additional_parameters)
 
     executor.update_parameters(
+        name=job_name,
         timeout_min=timeout_min,
         cpus_per_task=cpus_per_task,
+        gpus_per_node=num_gpus,
         mem_gb=mem_gb,
         slurm_additional_parameters=slurm_additional_parameters,
     )
