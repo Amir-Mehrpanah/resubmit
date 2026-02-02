@@ -15,12 +15,28 @@ def _submit_jobs(
     block: bool,
     prompt: bool,
     local_run: bool,
+    debug: bool = False,
     job_name: Optional[str] = "resubmit",
     slurm_additional_parameters: Optional[Dict] = None,
 ):
     """Submit jobs described by `jobs_args` where each entry is a dict of kwargs for `func`.
 
-    - If `local_run` is True, the function is called directly: `func(jobs_args)`.
+    Args:
+        jobs_args: Iterable of dicts of job parameters.
+        func: Function to be submitted for each job.
+        timeout_min: Job timeout in minutes.
+        cpus_per_task: Number of CPUs per task.
+        mem_gb: Memory in GB.
+        num_gpus: Number of GPUs.
+        folder: Folder for logs.
+        block: Whether to block until jobs complete.
+        prompt: Whether to prompt for confirmation before submission.
+        local_run: If True, runs the function locally instead of submitting.
+        debug: If True, runs only the first job in the queue for debugging.
+        job_name: Name of the job.
+        slurm_additional_parameters: Additional Slurm parameters as a dict. If not provided,
+    
+    - If `local_run` is True, the function is called directly on the local machine: `func(jobs_args[0])`.
     - Otherwise, submits via submitit.AutoExecutor and returns job objects or, if `block` is True, waits and returns results.
 
     Optional Slurm settings `constraint` and `reservation` can be provided via explicit
@@ -30,12 +46,16 @@ def _submit_jobs(
     """
     jobs_list = list(jobs_args) if not isinstance(jobs_args, list) else jobs_args
 
+    if debug:
+        print("Debug mode: only running the first job locally")
+        return func([jobs_list[0]])
+
     if len(jobs_list) == 0:
         print("No jobs to run exiting")
         return
 
     if local_run:
-        print("Running locally (local_run=True)")
+        print("Running the jobs locally (local_run=True)")
         return func(jobs_list)
 
     if prompt:

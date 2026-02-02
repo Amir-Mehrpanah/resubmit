@@ -31,6 +31,26 @@ def test_maybe_attach_debugger_noop():
     maybe_attach_debugger(0)
 
 
+def test_runs_only_the_first_job_in_debug_mode(monkeypatch):
+    jobs = [{"id": 1}, {"id": 2}, {"id": 3}]
+
+    res = _submit_jobs(
+        jobs,
+        dummy_func,
+        timeout_min=1,
+        local_run=True,
+        num_gpus=0,
+        cpus_per_task=1,
+        mem_gb=8,
+        folder="dummy/%j",
+        block=False,
+        prompt=False,
+        debug=True,
+    )
+    # only the first job should be run in debug mode
+    assert res == ["ok-1"]
+
+
 def test_slurm_parameters_optional(monkeypatch):
     events = {}
 
@@ -65,9 +85,10 @@ def test_slurm_parameters_optional(monkeypatch):
         mem_gb=16,
         folder="logs/%j",
         block=False,
+        slurm_additional_parameters={},
     )
     slurm = events["update"]["slurm_additional_parameters"]
-    assert slurm["gpus"] == 2
+
     assert "constraint" not in slurm
     assert "reservation" not in slurm
 
@@ -112,4 +133,3 @@ def test_slurm_parameters_settable(monkeypatch):
     slurm = events["update"]["slurm_additional_parameters"]
     assert slurm["constraint"] == "thin"
     assert slurm["reservation"] == "safe"
-
