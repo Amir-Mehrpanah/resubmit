@@ -48,7 +48,7 @@ def _submit_jobs(
 
     if debug:
         print("Debug mode: only running the first job locally")
-        return func([jobs_list[0]])
+        return func(jobs_list[0])
 
     if len(jobs_list) == 0:
         print("No jobs to run exiting")

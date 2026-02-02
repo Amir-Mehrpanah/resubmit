@@ -31,12 +31,15 @@ def test_maybe_attach_debugger_noop():
     maybe_attach_debugger(0)
 
 
-def test_runs_only_the_first_job_in_debug_mode(monkeypatch):
+def test_runs_only_the_first_job_in_debug_mode():
     jobs = [{"id": 1}, {"id": 2}, {"id": 3}]
+
+    def dummy_func_single(job):
+        return f"ok-{job['id']}"
 
     res = _submit_jobs(
         jobs,
-        dummy_func,
+        dummy_func_single,
         timeout_min=1,
         local_run=True,
         num_gpus=0,
@@ -48,7 +51,7 @@ def test_runs_only_the_first_job_in_debug_mode(monkeypatch):
         debug=True,
     )
     # only the first job should be run in debug mode
-    assert res == ["ok-1"]
+    assert res == "ok-1"
 
 
 def test_slurm_parameters_optional(monkeypatch):
