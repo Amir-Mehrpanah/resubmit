@@ -153,6 +153,7 @@ def submit_jobs(
     block: bool = False,
     prompt: bool = True,
     local_run: bool = False,
+    job_name: Optional[str] = "resubmit",
     slurm_additional_parameters: Dict | None = None,
 ) -> Any:
     """
@@ -193,5 +194,6 @@ def submit_jobs(
         block=block,
         prompt=prompt,
         local_run=local_run,
+        job_name=job_name,
         slurm_additional_parameters=slurm_additional_parameters,
     )
