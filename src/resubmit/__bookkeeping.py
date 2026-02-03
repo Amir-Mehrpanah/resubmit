@@ -153,7 +153,7 @@ def submit_jobs(
     block: bool = False,
     prompt: bool = True,
     local_run: bool = False,
-    debug: bool = False,
+    debug_port: Optional[int] = None,
     job_name: Optional[str] = "resubmit",
     slurm_additional_parameters: Dict | None = None,
 ) -> Any:
@@ -175,7 +175,7 @@ def submit_jobs(
         block: Whether to block until jobs complete.
         prompt: Whether to prompt for confirmation before submission.
         local_run: If True, runs the function locally instead of submitting.
-        debug: If True, it runs only the first job in the queue for debugging.
+        debug_port: If not None runs only the first job, if bigger than zero, waits for a debugger to attach after the job runs.
         job_name: Name of the job.
         slurm_additional_parameters: Additional Slurm parameters as a dict. If not provided, defaults to {"gpus": num_gpus}.
     Returns:
@@ -197,7 +197,7 @@ def submit_jobs(
         block=block,
         prompt=prompt,
         local_run=local_run,
-        debug=debug,
+        debug_port=debug_port,
         job_name=job_name,
         slurm_additional_parameters=slurm_additional_parameters,
     )

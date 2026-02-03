@@ -1,16 +1,18 @@
 import pytest
 from resubmit import maybe_attach_debugger
 from resubmit.__submit import _submit_jobs
+from resubmit.__bookkeeping import submit_jobs
 
 
-def dummy_func(jobs):
+def dummy_func(job):
+    print(job)
     # return a list of strings to show behavior
-    return [f"ok-{j['id']}" for j in jobs]
+    return f"ok-{job['id']}"
 
 
 def test_submit_local_run():
-    jobs = [{"id": 1}, {"id": 2}]
-    res = _submit_jobs(
+    jobs = {"id": [1,2], "xd": [4]}
+    res = submit_jobs(
         jobs,
         dummy_func,
         timeout_min=1,
@@ -24,6 +26,43 @@ def test_submit_local_run():
     )
     assert res == ["ok-1", "ok-2"]
 
+def test_submit_with_port_number_remote_run(monkeypatch):
+    events = {}
+
+    class DummyExecutor:
+        def __init__(self, folder):
+            events["folder"] = folder
+
+        def update_parameters(self, **kwargs):
+            # capture the parameters passed to the executor
+            events["update"] = kwargs
+
+        def map_array(self, func, jobs_list):
+            print("my map array is called")
+            return [func(j) for j in jobs_list]
+
+    class DummyModule:
+        AutoExecutor = DummyExecutor
+
+    import sys
+
+    monkeypatch.setitem(sys.modules, "submitit", DummyModule)
+
+    jobs = {"id": [1,2], "xd": [5,6]}
+    res = submit_jobs(
+        jobs,
+        dummy_func,
+        timeout_min=1,
+        local_run=False,
+        num_gpus=0,
+        cpus_per_task=1,
+        mem_gb=8,
+        folder="dummy/%j",
+        debug_port=0,
+        block=False,
+        prompt=False,
+    )
+    assert res == ["ok-1"]
 
 def test_maybe_attach_debugger_noop():
     # should not raise when port is None or 0
@@ -31,15 +70,12 @@ def test_maybe_attach_debugger_noop():
     maybe_attach_debugger(0)
 
 
-def test_runs_only_the_first_job_in_debug_mode():
-    jobs = [{"id": 1}, {"id": 2}, {"id": 3}]
+def test_runs_only_the_first_job_in_debug_mode_local_run():
+    jobs = {"id": [1, 2, 3], "xd": [2, 3, 4]}
 
-    def dummy_func_single(job):
-        return f"ok-{job['id']}"
-
-    res = _submit_jobs(
+    res = submit_jobs(
         jobs,
-        dummy_func_single,
+        dummy_func,
         timeout_min=1,
         local_run=True,
         num_gpus=0,
@@ -48,10 +84,10 @@ def test_runs_only_the_first_job_in_debug_mode():
         folder="dummy/%j",
         block=False,
         prompt=False,
-        debug=True,
+        debug_port=0,
     )
     # only the first job should be run in debug mode
-    assert res == "ok-1"
+    assert res == ["ok-1"]
 
 
 def test_slurm_parameters_optional(monkeypatch):

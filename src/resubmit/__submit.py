@@ -1,11 +1,13 @@
 """Core submission utilities wrapping submitit."""
 
-from typing import Any, Callable, Iterable, List, Optional, Dict
+from typing import Callable, Iterable, Optional, Dict
+
+from .__debug import maybe_attach_debugger
 
 
 def _submit_jobs(
     jobs_args: Iterable[dict],
-    func: Callable[[List[dict]], Any],
+    func: Callable,
     *,
     timeout_min: int,
     cpus_per_task: int,
@@ -15,7 +17,7 @@ def _submit_jobs(
     block: bool,
     prompt: bool,
     local_run: bool,
-    debug: bool = False,
+    debug_port: bool = False,
     job_name: Optional[str] = "resubmit",
     slurm_additional_parameters: Optional[Dict] = None,
 ):
@@ -31,11 +33,10 @@ def _submit_jobs(
         folder: Folder for logs.
         block: Whether to block until jobs complete.
         prompt: Whether to prompt for confirmation before submission.
-        local_run: If True, runs the function locally instead of submitting.
-        debug: If True, runs only the first job in the queue for debugging.
+        debug_port: If `debug_port > 0`, attaches a debugger and waits for debugger to attach. if `debug_port >= 0` runs only the first job in the queue.
         job_name: Name of the job.
         slurm_additional_parameters: Additional Slurm parameters as a dict. If not provided,
-    
+
     - If `local_run` is True, the function is called directly on the local machine: `func(jobs_args[0])`.
     - Otherwise, submits via submitit.AutoExecutor and returns job objects or, if `block` is True, waits and returns results.
 
@@ -46,23 +47,23 @@ def _submit_jobs(
     """
     jobs_list = list(jobs_args) if not isinstance(jobs_args, list) else jobs_args
 
-    if debug:
-        print("Debug mode: only running the first job locally")
-        return func(jobs_list[0])
-
     if len(jobs_list) == 0:
         print("No jobs to run exiting")
         return
 
-    if local_run:
-        print("Running the jobs locally (local_run=True)")
-        return func(jobs_list)
+    if debug_port is not None and debug_port >= 0:
+        print("Debug mode: only running the first job.")
+        jobs_list = [jobs_list[0]]
 
     if prompt:
         print("Do you want to continue? [y/n]", flush=True)
         if input() != "y":
             print("Aborted")
             return
+
+    if local_run:
+        print("Running the jobs locally (local_run=True)")
+        return [func(job) for job in jobs_list]
 
     import submitit
 
@@ -79,9 +80,16 @@ def _submit_jobs(
         mem_gb=mem_gb,
         slurm_additional_parameters=slurm_additional_parameters,
     )
+    if debug_port is not None and debug_port > 0:
 
-    jobs = executor.map_array(func, jobs_list)
-    print("Job submitted")
+        def wrapper(args):
+            maybe_attach_debugger(debug_port)
+            return func(args)
+
+        jobs = executor.map_array(wrapper, jobs_list)
+    else:
+        jobs = executor.map_array(func, jobs_list)
+    print("Jobs submitted")
 
     if block:
         print("Waiting for job to finish")
