@@ -16,6 +16,17 @@ def test_create_jobs_callable():
     assert list(df["b"]) == [10, 20]
 
 
+def test_create_jobs_transform():
+    params = {
+        "a": [1, 2],
+        "b__callable": lambda df: df["a"] * 10,
+        "d_transform": lambda df: pd.DataFrame({"a": df["a"], "c": df["a"] + df["b"]}),
+    }
+    df = create_jobs_dataframe(params)
+    assert "b" not in df.columns
+    assert list(df["c"]) == [11, 22]
+
+
 def test_create_jobs_regex_include():
     params = {"name": ["apple", "banana", "apricot"], "name__regex": re.compile(r"^a")}
     df = create_jobs_dataframe(params)

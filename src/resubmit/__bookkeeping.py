@@ -72,7 +72,7 @@ def create_jobs_dataframe(params: Dict[str, Any]) -> pd.DataFrame:
     callables: Dict[str, Any] = {}
     regex_specs: Dict[str, Any] = {}
     unique_items: Dict[str, Any] = {}
-
+    transforms: Dict[str, Any] = {}
     for k, v in params.items():
         # support explicit regex keys like 'name__regex' or 'name_regex' to filter 'name'
         if k.endswith("__regex") or k.endswith("_regex"):
@@ -93,7 +93,12 @@ def create_jobs_dataframe(params: Dict[str, Any]) -> pd.DataFrame:
             else:
                 base = k[: -len("_unique")]
             unique_items[base] = v
-            continue
+        elif k.endswith("__transform") or k.endswith("_transform"):
+            if k.endswith("__transform"):
+                base = k[: -len("__transform")]
+            else:
+                base = k[: -len("_transform")]
+            transforms[base] = v
         else:
             static_items[k] = v
 
@@ -114,6 +119,10 @@ def create_jobs_dataframe(params: Dict[str, Any]) -> pd.DataFrame:
                 f"Callable for param {k!r} returned length {len(vals)} != {len(df)}"
             )
         df[k] = vals
+
+    # Apply transforms (they must accept the dataframe and return a dataframe)
+    for k, fn in transforms.items():
+        df = fn(df)
 
     # Apply regex specs last as filters
     if len(regex_specs) > 0:
@@ -161,7 +170,8 @@ def submit_jobs(
     Submit jobs described by `jobs_args` where each entry is a dict of kwargs for `func`.
     A dataframe is created from cartesian product of parameter lists, with support for callables and regex filtering.
     1. use `__unique' postfix in keys to enforce uniqueness.
-    2. use `__callable' postfix in keys to define callables for column values.
+    2. use `__callable' postfix in keys to define callables for column values. callable must return a pandas.Series
+    4. ues `__transform` postfix in keys to define callables for column values. callable must return a pandas.DataFrame
     3. use `__regex' postfix in keys to define regex filters for columns.
 
     Args:
