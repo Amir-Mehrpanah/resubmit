@@ -27,6 +27,49 @@ def test_create_jobs_transform():
     assert list(df["c"]) == [11, 22]
 
 
+def test_error_in_create_jobs_transform():
+    def raise_error():
+        raise NotImplementedError("Test")
+
+    params = {
+        "a": [1, 2],
+        "b__callable": lambda df: df["a"] * 10,
+        "d_transform": lambda df: raise_error(),
+    }
+    try:
+        df = create_jobs_dataframe(params)
+    except NotImplementedError as e:
+        assert "Test" in e.args[0] and "Error at key 'd'" in e.args[0]
+
+
+def test_error_in_create_jobs_callable():
+    def raise_error():
+        raise NotImplementedError("Test")
+
+    params = {
+        "a": [1, 2],
+        "b__callable": lambda df: raise_error(),
+        "d_transform": lambda df: df,
+    }
+    try:
+        df = create_jobs_dataframe(params)
+    except NotImplementedError as e:
+        assert "Test" in e.args[0] and "Error at key 'b'" in e.args[0]
+
+
+def test_error_in_create_jobs_static_items():
+
+    params = {
+        "a": [1, 2],
+        "s": 1,
+        "b__callable": lambda df: df["a"] * 10,
+    }
+    try:
+        df = create_jobs_dataframe(params)
+    except TypeError as e:
+        assert f"'s' = 1 is not iterable" in e.args[0]
+
+
 def test_create_jobs_regex_include():
     params = {"name": ["apple", "banana", "apricot"], "name__regex": re.compile(r"^a")}
     df = create_jobs_dataframe(params)

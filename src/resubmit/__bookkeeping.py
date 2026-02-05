@@ -107,22 +107,33 @@ def create_jobs_dataframe(params: Dict[str, Any]) -> pd.DataFrame:
     if len(static_items) == 0:
         df = pd.DataFrame([{}])
     else:
+        for k, v in static_items.items():
+            if not isinstance(v, Iterable):
+                raise TypeError(
+                    f"The static item with key {k!r} = {v} is not iterable. all static items expected be an iterable. Use {k} = [{v}] if you wish to pass a single argument."
+                )
         df = pd.DataFrame(
             list(product(*static_items.values())), columns=static_items.keys()
         )
 
     # Apply callables (they must accept the dataframe and return a list-like)
     for k, fn in callables.items():
-        vals = fn(df)
-        if len(vals) != len(df):
-            raise ValueError(
-                f"Callable for param {k!r} returned length {len(vals)} != {len(df)}"
-            )
-        df[k] = vals
+        try:
+            vals = fn(df)
+            if len(vals) != len(df):
+                raise ValueError(
+                    f"Callable for param {k!r} returned length {len(vals)} != {len(df)}"
+                )
+            df[k] = vals
+        except Exception as e:
+            raise type(e)(f"Error at key {k!r}: {e}") from e
 
     # Apply transforms (they must accept the dataframe and return a dataframe)
     for k, fn in transforms.items():
-        df = fn(df)
+        try:
+            df = fn(df)
+        except Exception as e:
+            raise type(e)(f"Error at key {k!r}: {e}") from e
 
     # Apply regex specs last as filters
     if len(regex_specs) > 0:
