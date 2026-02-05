@@ -1,6 +1,6 @@
 """Core submission utilities wrapping submitit."""
 
-from typing import Callable, Iterable, Optional, Dict
+from typing import Callable, Iterable, Optional, Dict, Union
 
 from .__debug import maybe_attach_debugger
 
@@ -15,7 +15,7 @@ def _submit_jobs(
     num_gpus: int,
     folder: str,
     block: bool,
-    prompt: bool,
+    prompt: Union[bool, str],
     local_run: bool,
     debug_port: bool = False,
     job_name: Optional[str] = "resubmit",
@@ -32,13 +32,14 @@ def _submit_jobs(
         num_gpus: Number of GPUs.
         folder: Folder for logs.
         block: Whether to block until jobs complete.
-        prompt: Whether to prompt for confirmation before submission.
+        prompt: Whether to prompt for confirmation before submission. if boolean it only prompts whether it should continue if str, it prints values from jobs for the prompted key.
         debug_port: If `debug_port > 0`, attaches a debugger and waits for debugger to attach. if `debug_port >= 0` runs only the first job in the queue.
         job_name: Name of the job.
         slurm_additional_parameters: Additional Slurm parameters as a dict. If not provided,
 
     - If `local_run` is True, the function is called directly on the local machine: `func(jobs_args[0])`.
     - Otherwise, submits via submitit.AutoExecutor and returns job objects or, if `block` is True, waits and returns results.
+    - If you want to see a list of jobs before running, provide a key named `resubmit_prompt` in jobs_args. It will be printed before the prompt.
 
     Optional Slurm settings `constraint` and `reservation` can be provided via explicit
     parameters (they take precedence) or by passing `slurm_additional_parameters`.
@@ -56,6 +57,9 @@ def _submit_jobs(
         jobs_list = [jobs_list[0]]
 
     if prompt:
+        if isinstance(prompt, str):
+            for job in jobs_list:
+                print(job[prompt])
         print("Do you want to continue? [y/n]", flush=True)
         if input() != "y":
             print("Aborted")

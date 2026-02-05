@@ -10,8 +10,26 @@ def dummy_func(job):
     return f"ok-{job['id']}"
 
 
+def test_resubmit_prompt(monkeypatch, capsys):
+    jobs = {
+        "id": [1, 2],
+        "s": [1],
+        "b__callable": lambda df: df["id"] * 10,
+    }
+    monkeypatch.setattr("builtins.input", lambda *_: "n")
+    submit_jobs(
+        jobs,
+        dummy_func,
+        timeout_min=1,
+        local_run=True,
+        prompt="b",
+    )
+    captured = capsys.readouterr()
+    assert "10\n20\n" in captured.out
+
+
 def test_submit_local_run():
-    jobs = {"id": [1,2], "xd": [4]}
+    jobs = {"id": [1, 2], "xd": [4]}
     res = submit_jobs(
         jobs,
         dummy_func,
@@ -25,6 +43,7 @@ def test_submit_local_run():
         prompt=False,
     )
     assert res == ["ok-1", "ok-2"]
+
 
 def test_submit_with_port_number_remote_run(monkeypatch):
     events = {}
@@ -48,7 +67,7 @@ def test_submit_with_port_number_remote_run(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "submitit", DummyModule)
 
-    jobs = {"id": [1,2], "xd": [5,6]}
+    jobs = {"id": [1, 2], "xd": [5, 6]}
     res = submit_jobs(
         jobs,
         dummy_func,
@@ -63,6 +82,7 @@ def test_submit_with_port_number_remote_run(monkeypatch):
         prompt=False,
     )
     assert res == ["ok-1"]
+
 
 def test_maybe_attach_debugger_noop():
     # should not raise when port is None or 0
