@@ -58,8 +58,8 @@ def _submit_jobs(
 
     if prompt:
         if isinstance(prompt, str):
-            for job in jobs_list:
-                print(job[prompt])
+            for job_index, job in enumerate(jobs_list):
+                print([job_index], "\t", job[prompt])
         print("Do you want to continue? [y/n]", flush=True)
         if input() != "y":
             print("Aborted")

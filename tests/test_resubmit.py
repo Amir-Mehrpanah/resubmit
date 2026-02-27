@@ -1,4 +1,3 @@
-import pytest
 from resubmit import maybe_attach_debugger
 from resubmit.__submit import _submit_jobs
 from resubmit.__bookkeeping import submit_jobs
@@ -25,7 +24,29 @@ def test_resubmit_prompt(monkeypatch, capsys):
         prompt="b",
     )
     captured = capsys.readouterr()
-    assert "10\n20\n" in captured.out
+    assert "10\n" in captured.out and "20\n" in captured.out
+
+
+def test_resubmit_prompt_2(monkeypatch, capsys):
+    jobs = {
+        "id": [1, 2],
+        "s": [5, 6, 7],
+        "b__callable": lambda df: df["id"] * 10,
+    }
+    monkeypatch.setattr("builtins.input", lambda *_: "n")
+    submit_jobs(
+        jobs,
+        dummy_func,
+        timeout_min=1,
+        local_run=True,
+        prompt="s",
+    )
+    captured = capsys.readouterr()
+    assert (
+        "[0] \t 5\n" in captured.out
+        and "[1] \t 6\n" in captured.out
+        and "[2] \t 7\n" in captured.out
+    )
 
 
 def test_submit_local_run():
